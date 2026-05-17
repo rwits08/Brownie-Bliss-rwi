@@ -39,9 +39,9 @@ npm install
 ```
 
 ### 2. Configure WhatsApp Number
-Open `public/script.js` and update the `BUSINESS_WHATSAPP` value:
+Open `public/script.js` and update the `fullPhone` variable inside the `sendWhatsAppFinal` function:
 ```js
-const BUSINESS_WHATSAPP = '919876543210'; // Replace with YOUR WhatsApp number
+const fullPhone = `918072596340`; // Replace with YOUR WhatsApp number
 ```
 Format: country code + number, no plus sign or spaces. E.g., `919876543210`
 
