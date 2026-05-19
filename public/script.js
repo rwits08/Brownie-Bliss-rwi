@@ -19,7 +19,6 @@ function toggleTheme() {
 // --- PRODUCTS DATA ---
 let products = [];
 let bdayCakes = {};
-buildCatalogFromList(null);
 const DEFAULT_PRODUCTS = [
     { id: 1, name: "Velvet Dream Cake", category: "cakes", price: 850, emoji: "", img: "https://theobroma.in/cdn/shop/files/redvelvet-theo.jpg?v=1701321860" },
     { id: 2, name: "Dutch Truffle Delight", category: "cakes", price: 950, emoji: "", img: "https://tse3.mm.bing.net/th/id/OIP.6wMpc_E6xsHLl3zT2ItBSQHaHa?pid=Api&P=0&h=180" },
@@ -50,9 +49,37 @@ const BROWNIE_BLISS_BAKERY = {
 };
 let favourites = loadFavourites();
 
+function buildCatalogFromList(list) {
+    if (!Array.isArray(list) || list.length === 0) {
+        products = DEFAULT_PRODUCTS;
+        bdayCakes = { ...DEFAULT_BDAY_CAKES };
+        return;
+    }
+
+    products = list
+        .filter(p => p.type === 'standard')
+        .map(p => ({
+            id: p.id_ref,
+            name: p.name,
+            category: p.category,
+            price: p.price,
+            emoji: p.emoji,
+            img: p.img,
+            description: p.description || ''
+        }));
+
+    bdayCakes = {};
+    list.filter(p => p.type === 'birthday').forEach(p => {
+        bdayCakes[p.id_ref] = {
+            price: p.price,
+            emoji: p.emoji,
+            img: p.img
+        };
+    });
+}
+
 function useFallbackProducts() {
-    products = DEFAULT_PRODUCTS;
-    bdayCakes = { ...DEFAULT_BDAY_CAKES };
+    buildCatalogFromList(null);
 
     if (document.getElementById('productsGrid')) {
         filterProducts('all');
@@ -136,50 +163,18 @@ async function loadProducts() {
         if (data.success && Array.isArray(data.products)) {
             buildCatalogFromList(data.products);
         } else {
-            buildCatalogFromList(null);
-        }
-    } catch (e) {
-        console.error('Error loading products from database:', e);
-        buildCatalogFromList(null);
-    }
-    if (document.getElementById('productsGrid')) {
-        filterProducts('all');
-    }
-    if (document.getElementById('cakePrice')) {
-        calculateBdayPrice();
-        if (data.success && Array.isArray(data.products) && data.products.length) {
-            products = data.products.filter(p => p.type === 'standard').map(p => ({
-                id: p.id_ref,
-                name: p.name,
-                category: p.category,
-                price: p.price,
-                emoji: p.emoji,
-                img: p.img,
-                description: p.description || ''
-            }));
-
-            const bd = data.products.filter(p => p.type === 'birthday');
-            bd.forEach(p => {
-                bdayCakes[p.id_ref] = {
-                    price: p.price,
-                    emoji: p.emoji,
-                    img: p.img
-                };
-            });
-
-            // Re-render UI now that data is loaded
-            if (document.getElementById('productsGrid')) {
-                filterProducts('all');
-            }
-            if (document.getElementById('cakePrice')) {
-                calculateBdayPrice();
-            }
-        } else {
             useFallbackProducts();
         }
     } catch (e) {
         console.error('Error loading products from database:', e);
         useFallbackProducts();
+    }
+
+    if (document.getElementById('productsGrid')) {
+        filterProducts('all');
+    }
+    if (document.getElementById('cakePrice')) {
+        calculateBdayPrice();
     }
 }
 
@@ -602,20 +597,6 @@ function sendWhatsAppFinal(orderId, itemsSnap, orderTotal) {
         ? orderTotal
         : lines.reduce((s, i) => s + Number(i.price) * Number(i.qty), 0);
     const itemLines = lines.map(i => `• ${i.name} × ${i.qty} = ₹${(Number(i.price) * Number(i.qty)).toLocaleString('en-IN')}`).join('\n');
-function sendWhatsAppFinal(orderId) {
-    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const itemLines = cart.map(i => {
-        let line = `• ${i.name} × ${i.qty} = ₹${(i.price * i.qty).toLocaleString()}`;
-        if (i.customizations) {
-            const c = i.customizations;
-            const details = [];
-            if (c.dietary) details.push(c.dietary === 'eggless' ? 'Eggless' : 'Egg');
-            if (c.toppings && c.toppings.length) details.push(c.toppings.map(t => `+${t.name}`).join(', '));
-            if (c.message) details.push(`Msg: "${c.message}"`);
-            if (details.length) line += `\n   _${details.join(' | ')}_`;
-        }
-        return line;
-    }).join('\n');
 
     const message = `🍫 *New Order Received — Brownie Bliss*\n\n` +
         `📋 *Order ID:* ${orderId}\n` +
@@ -627,7 +608,7 @@ function sendWhatsAppFinal(orderId) {
         `_Your order has been recorded. Please share the payment receipt for confirmation!_ ✨`;
 
     const encodedMsg = encodeURIComponent(message);
-    const fullPhone = `918072596340`;
+    const fullPhone = `971552035573`;
     const waUrl = `https://wa.me/${fullPhone}?text=${encodedMsg}`;
 
     window.open(waUrl, '_blank');
@@ -651,9 +632,9 @@ function filterProducts(category, btn) {
     const filtered = category === 'all' ? products : products.filter(p => p.category === category);
 
     grid.innerHTML = filtered.map(p => `
-        <div class="product-card" onclick='openCustomizeModal(${JSON.stringify(p).replace(/'/g, "&#39;")})' style="cursor:pointer">
+        <div class="product-card">
             <div class="product-img-wrap">
-                <img src="${p.img}" alt="${p.name}">
+                <img src="${p.img}" alt="${p.name}" style="cursor:pointer" onclick='openCustomizeModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
                 <button class="favorite-btn ${isFavourite('dishes', p.id) ? 'active' : ''}"
                     type="button"
                     data-fav-type="dishes"
@@ -661,7 +642,7 @@ function filterProducts(category, btn) {
                     aria-label="Toggle ${p.name} favourite"
                     aria-pressed="${isFavourite('dishes', p.id) ? 'true' : 'false'}"
                     title="${isFavourite('dishes', p.id) ? 'Remove from favourites' : 'Add to favourites'}"
-                    onclick='toggleFavourite("dishes", ${JSON.stringify(p)})'>
+                    onclick='event.stopPropagation(); toggleFavourite("dishes", ${JSON.stringify(p)})'>
                     ${isFavourite('dishes', p.id) ? '&hearts;' : '&#9825;'}
                 </button>
                 ${p.id < 4 ? '<div class="bestseller-badge">⭐ Bestseller</div>' : ''}
@@ -671,11 +652,8 @@ function filterProducts(category, btn) {
                 <div class="product-name">${p.name}</div>
                 ${p.description ? `<div class="product-desc">${p.description}</div>` : ''}
                 <div class="product-price">₹${p.price}</div>
-                <button type="button" class="add-to-cart" data-product-id="${String(p.id)}">
-                    Add to Cart
-                <button class="add-to-cart">
-                    Customize & Add
-                </button>
+                <button type="button" class="add-to-cart" data-product-id="${String(p.id)}">Add to Cart</button>
+                <button class="add-to-cart">Customize & Add</button>
             </div>
         </div>
     `).join('');
