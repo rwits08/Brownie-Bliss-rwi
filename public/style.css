@@ -9812,6 +9812,38 @@ html.dark .topping-price {
   margin: 40px 0 55px;
 }
 
+/* ── FIX 5: Checkout & Cart Responsive Audit (OTP sizes & Keyboard scroll behavior) ── */
+@media (max-width: 480px) {
+  .checkout-overlay {
+    align-items: flex-start !important; /* Prevent off-screen vertical centering when keyboard is open */
+    overflow-y: auto !important;
+    padding: 20px 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .checkout-modal {
+    margin: 20px auto !important; /* Centered with vertical safety spacing */
+    width: 100% !important;
+    max-width: 355px !important; /* Ensures it perfectly fits 375px screens with margin */
+  }
+  .checkout-body {
+    padding: 24px 16px !important; /* Gives more content room on small mobile widths */
+  }
+  .otp-container {
+    justify-content: center !important;
+    gap: 8px !important; /* Tightens gaps to fit exactly six 44px boxes */
+  }
+  .otp-box {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    font-size: 20px !important; /* Adjusted slightly to look proportional inside 44px */
+  }
+}
+
+.birthday-slider::-webkit-scrollbar {
+  display: none;
 .price-filter {
   display: flex;
   align-items: center;

@@ -28,6 +28,14 @@ window.toggleTheme = toggleTheme;
 // --- PRODUCTS DATA ---
 let products = [];
 let bdayCakes = {};
+let selectedFlavor = 'Red Velvet';
+let selectedWeight = '1.0';
+const BIRTHDAY_BASE_PRICES = {
+    '0.5': 450,
+    '1.0': 850,
+    '1.5': 1250,
+    '2.0': 1600
+};
 
 // buildCatalogFromList(null);
 const DEFAULT_PRODUCTS = [
@@ -40,6 +48,20 @@ const DEFAULT_BDAY_CAKES = {
     "Red Velvet": { price: 850, img: "https://theobroma.in/cdn/shop/files/redvelvet-theo.jpg?v=1701321860" },
     "Dutch Truffle": { price: 950, img: "https://tse2.mm.bing.net/th/id/OIP.RFIPPxLpOU7C0ryaVA5hMwHaHa?pid=Api&P=0&h=180" }
 };
+let favourites = loadFavourites();
+buildCatalogFromList(null);
+
+function useFallbackProducts() {
+    products = DEFAULT_PRODUCTS;
+    bdayCakes = { ...DEFAULT_BDAY_CAKES };
+
+    if (document.getElementById('productsGrid')) {
+        filterProducts('all');
+    }
+    if (document.getElementById('cakePrice')) {
+        calculateBdayPrice();
+    }
+}
 
 const FAVOURITES_KEY = 'brownie_bliss_favourites';
 
@@ -97,6 +119,67 @@ async function loadProducts() {
     }
     if (document.getElementById('cakePrice')) {
         calculateBdayPrice();
+    }
+}
+
+function buildCatalogFromList(list) {
+    if (list && Array.isArray(list) && list.length) {
+        products = list.filter(p => p.type === 'standard').map(p => ({
+
+    if (document.getElementById('productsGrid')) filterProducts('all');
+    if (document.getElementById('cakePrice')) calculateBdayPrice();
+}
+
+function useFallbackProducts() {
+    products = DEFAULT_PRODUCTS;
+    bdayCakes = DEFAULT_BDAY_CAKES;
+}
+
+// --- FAVOURITES ---
+function loadFavourites() {
+    try {
+        return JSON.parse(localStorage.getItem(FAVOURITES_KEY)) || { bakeries: [], dishes: [] };
+    } catch {
+        return { bakeries: [], dishes: [] };
+        if (data.success && Array.isArray(data.products) && data.products.length) {
+        
+          products = data.products.filter(p => p.type === 'standard').map(p => ({
+            id: p.id_ref,
+            name: p.name,
+            category: p.category,
+            price: p.price,
+            emoji: p.emoji,
+            img: p.img,
+            description: p.description || ''
+        }));
+
+        const bd = list.filter(p => p.type === 'birthday');
+        bdayCakes = {};
+        bd.forEach(p => {
+            bdayCakes[p.id_ref] = {
+                price: p.price,
+                emoji: p.emoji,
+                img: p.img
+            };
+        });
+    } else {
+            const bd = data.products.filter(p => p.type === 'birthday');
+
+            bd.forEach(p => {
+                bdayCakes[p.id_ref] = {
+                    price: p.price,
+                    emoji: p.emoji,
+                    img: p.img
+                };
+            });
+
+        } else {
+            useFallbackProducts();
+        }
+
+    } catch (e) {
+        console.error('Error loading products from database:', e);
+        useFallbackProducts();
     }
 
 function saveFavourites() {
@@ -523,6 +606,9 @@ function sendWhatsAppFinal(orderId, itemsSnap, orderTotal) {
         : lines.reduce((s, i) => s + Number(i.price) * Number(i.qty), 0);
     const itemLines = lines.map(i => {
         let line = `• ${i.name} × ${i.qty} = ₹${(Number(i.price) * Number(i.qty)).toLocaleString('en-IN')}`;
+
+    const itemLines = lines.map(i => {
+        let line = `• ${i.name} × ${i.qty} = ₹${(Number(i.price) * Number(i.qty)).toLocaleString('en-IN')}`;
         if (i.customizations) {
             const c = i.customizations;
             const details = [];
@@ -643,6 +729,40 @@ else if (selectedPriceFilter === 'above500') {
 }
 
 // --- BIRTHDAY CAKE BUILDER ---
+// bdayCakes object is now populated dynamically via loadProducts()
+
+function updateBirthdayCake(flavor) {
+
+    if (!bdayCakes[flavor]) {
+        console.error("Cake flavor not found:", flavor);
+        return;
+    }
+
+    selectedFlavor = flavor;
+
+    // Update image
+    const cakeImg = document.getElementById('birthdayCakeImg');
+    if (cakeImg && bdayCakes[flavor]) {
+        cakeImg.src = bdayCakes[flavor].img;
+    }
+
+    if (cakeImg) {
+        cakeImg.src = bdayCakes[flavor].img;
+    }
+
+    // Update active flavor button
+    document.querySelectorAll('.filter-pill').forEach(btn => {
+        if (btn.textContent.trim() === flavor) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    calculateBdayPrice();
+}
+function setCakeWeight(weight) {
+// --- BIRTHDAY CAKE ---
 let selectedFlavor = "Red Velvet";
 let selectedWeight = "1.0";
 
