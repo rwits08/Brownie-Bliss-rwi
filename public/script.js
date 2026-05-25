@@ -142,11 +142,49 @@ function loadFavourites() {
         return JSON.parse(localStorage.getItem(FAVOURITES_KEY)) || { bakeries: [], dishes: [] };
     } catch {
         return { bakeries: [], dishes: [] };
+        if (data.success && Array.isArray(data.products) && data.products.length) {
+
+            products = data.products
+                .filter(p => p.type === 'standard')
+                .map(p => ({
+                    id: p.id_ref,
+                    name: p.name,
+                    category: p.category,
+                    price: p.price,
+                    emoji: p.emoji,
+                    img: p.img,
+                    description: p.description || ''
+                }));
+
+            bdayCakes = {};
+
+            const bd = data.products.filter(p => p.type === 'birthday');
+
+            bd.forEach(p => {
+                bdayCakes[p.id_ref] = {
+                    price: p.price,
+                    emoji: p.emoji,
+                    img: p.img
+                };
+            });
+
+        } else {
+            useFallbackProducts();
+        }
+
+    } catch (e) {
+        console.error('Error loading products from database:', e);
+        useFallbackProducts();
     }
 }
 
-function saveFavourites() {
-    localStorage.setItem(FAVOURITES_KEY, JSON.stringify(favourites));
+    if (document.getElementById('productsGrid')) {
+        filterProducts('all');
+    }
+
+    if (document.getElementById('cakePrice')) {
+        calculateBdayPrice();
+    }
 }
 
 // Helper stub for favorites logic if not fully implemented
@@ -186,6 +224,21 @@ function updateCartUI() {
 
     if (cart.length === 0) {
         cartContainer.innerHTML = '<div class="cart-empty"><span class="cart-empty-icon">🍫</span>Your cart is empty</div>';
+        cartContainer.innerHTML = `
+  <div class="cart-empty-state">
+    <div class="empty-cart-icon">🍫</div>
+
+    <h2>Your cart is empty</h2>
+
+    <p>
+      Looks like you haven't added any brownies yet.
+    </p>
+
+    <a href="products.html" class="shop-now-btn">
+      Shop Now
+    </a>
+  </div>
+`;
         if (cartFooter) cartFooter.style.display = 'none';
     } else {
         cartContainer.innerHTML = cart.map((item, index) => {
@@ -975,4 +1028,29 @@ function scrollToTop() {
         top: 0,
         behavior: "smooth"
     });
+    const message = document.getElementById('customizeMessage').value.trim();
+
+    const toppingsTotal = toppings.reduce((s, t) => s + t.price, 0);
+    const finalPrice = _customizeProduct.price + toppingsTotal;
+
+    const cartItem = {
+        ..._customizeProduct,
+        price: finalPrice,
+        customizations: {
+            dietary,
+            toppings,
+            message
+        }
+    };
+
+    addToCart(cartItem);
+    closeCustomizeModal();
+    openCart();
+    // Close mobile menu when any link inside it is clicked
+document.querySelectorAll('.mobile-menu a').forEach(link => {
+  link.addEventListener('click', () => {
+    document.getElementById('mobileMenu').classList.remove('show');
+  });
+});
+}
 }
